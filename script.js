@@ -1,72 +1,54 @@
-const container = document.getElementById('cardContainer');
-const select = document.getElementById('pokemonSelect');
+const cardContainer = document.getElementById("cardContainer");
+const pokemonFilter = document.getElementById("pokemonFilter");
 
-const dittoData = {
-  name: "ditto",
-  abilities: ["limber", "imposter"],
-  images: [
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-ii/crystal/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/132.gif",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-iii/emerald/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-i/yellow/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/132.svg",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-iv/platinum/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/132.gif",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vi/x-y/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vii/ultra-sun-ultra-moon/132.png",
-    "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-viii/icons/132.png"
-  ]
-};
+let pokemons = [];
 
-let allCards = [];
-
-async function loadCards() {
-  allCards = dittoData.images.map((img, i) => {
-    return {
-      name: dittoData.name,
-      image: img,
-      ability: dittoData.abilities[i % dittoData.abilities.length],
-      id: `ditto-${i}`
-    };
-  });
-
-  allCards.forEach((card, i) => {
-    const option = document.createElement('option');
-    option.value = card.id;
-    option.textContent = `Variante ${i + 1}`;
-    select.appendChild(option);
-  });
-
-  renderCards(allCards);
+// Cargar múltiples pokemones por ID
+async function fetchPokemons() {
+  const ids = [132, 25, 1, 4, 7, 39, 94, 143, 149, 6, 150, 151, 3, 9, 65];
+  const promises = ids.map(id => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(res => res.json()));
+  pokemons = await Promise.all(promises);
+  displayCards(pokemons);
+  populateFilter(pokemons);
 }
 
-function renderCards(cards) {
-  container.innerHTML = '';
-  cards.forEach(poke => {
-    const card = document.createElement('div');
-    card.className = 'card';
+function displayCards(pokemonList) {
+  cardContainer.innerHTML = "";
+  pokemonList.forEach(pokemon => {
+    const ability = pokemon.abilities[0]?.ability.name || "N/A";
+    const card = document.createElement("div");
+    card.className = "col-12 col-md-4";
     card.innerHTML = `
-      <img src="${poke.image}" alt="${poke.name}" />
-      <h2>${poke.name.toUpperCase()}</h2>
-      <p>Habilidad: ${poke.ability}</p>
+      <div class="card h-100 text-center">
+        <img src="${pokemon.sprites.front_default}" class="card-img-top mx-auto" alt="${pokemon.name}" />
+        <div class="card-body">
+          <h5 class="card-title text-capitalize">${pokemon.name}</h5>
+          <p class="card-text">Habilidad: ${ability}</p>
+        </div>
+      </div>
     `;
-    container.appendChild(card);
+    cardContainer.appendChild(card);
   });
 }
 
-select.addEventListener('change', () => {
-  const selected = select.value;
-  if (selected === 'all') {
-    renderCards(allCards);
+function populateFilter(pokemonList) {
+  pokemonList.forEach(pokemon => {
+    const option = document.createElement("option");
+    option.value = pokemon.name;
+    option.textContent = pokemon.name;
+    pokemonFilter.appendChild(option);
+  });
+}
+
+pokemonFilter.addEventListener("change", () => {
+  const selected = pokemonFilter.value;
+  if (selected === "all") {
+    displayCards(pokemons);
   } else {
-    const filtered = allCards.filter(p => p.id === selected);
-    renderCards(filtered);
+    const filtered = pokemons.filter(p => p.name === selected);
+    displayCards(filtered);
   }
 });
 
-loadCards();
+// Inicializar
+fetchPokemons();
